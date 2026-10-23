@@ -1,0 +1,136 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="wordmark" href="#top" aria-label="Instagram home">Instagram</a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <button class="nav-item" [class.active]="currentSection === 'home'" type="button" (click)="openSection('home')"><span class="nav-icon">⌂</span><span>Home</span></button>
+      <button class="nav-item" [class.active]="currentSection === 'search'" type="button" (click)="openSection('search')"><span class="nav-icon">⌕</span><span>Search</span></button>
+      <a class="nav-item" href="#explore"><span class="nav-icon">▦</span><span>Explore</span></a>
+      <a class="nav-item" href="#reels"><span class="nav-icon">▻</span><span>Reels</span></a>
+      <a class="nav-item" href="#messages"><span class="nav-icon">➤</span><span>Messages</span></a>
+      <a class="nav-item" href="#notifications"><span class="nav-icon">♡</span><span>Notifications</span></a>
+      <button class="nav-item" type="button" (click)="toggleComposer()"><span class="nav-icon">⊞</span><span>Create</span></button>
+      <button class="nav-item profile-link" [class.active]="currentSection === 'profile'" type="button" (click)="openProfile()"><img class="tiny-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=faces" alt="Your profile"><span>Profile</span></button>
+    </nav>
+    <button class="nav-item more-link" type="button"><span class="nav-icon">☰</span><span>More</span></button>
+  </aside>
+
+  <main class="main-content" id="top">
+    <div class="mobile-top"><span class="wordmark">Instagram</span><div><button aria-label="Search" (click)="openSection('search')">⌕</button><button aria-label="Profile" (click)="openProfile()"><img class="tiny-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=faces" alt=""></button></div></div>
+
+    @if (currentSection === 'search') {
+      <section class="page-panel search-page" aria-label="Search accounts and posts">
+        <h1>Search</h1>
+        <label class="search-box"><span>⌕</span><input type="search" placeholder="Search people, places, or captions" aria-label="Search people, places, or captions" [value]="searchQuery" (input)="searchQuery = $any($event.target).value"><button type="button" aria-label="Clear search" (click)="searchQuery = ''">×</button></label>
+        @if (!searchQuery.trim()) {
+          <div class="search-empty"><span class="search-big-icon">⌕</span><strong>Search Instagram</strong><p>Find people and posts by username, place, or caption.</p></div>
+        } @else {
+          <div class="search-results">
+            @for (account of searchAccounts; track account.username) {
+              <button class="search-result" type="button" (click)="openProfile(account.username)"><img class="avatar" [src]="account.avatar" [alt]="account.username"><span><strong>{{ account.username }}</strong><small>{{ account.label }}</small></span><span class="result-arrow">›</span></button>
+            }
+            @for (post of searchPosts; track post.id) {
+              <button class="search-result" type="button" (click)="openSection('home')"><img class="result-thumb" [src]="post.image" [alt]="post.alt"><span><strong>{{ post.username }}</strong><small>{{ post.caption }}</small></span><span class="result-arrow">›</span></button>
+            }
+            @if (!searchAccounts.length && !searchPosts.length) { <p class="no-results">No results found for “{{ searchQuery }}”</p> }
+          </div>
+        }
+      </section>
+    } @else if (currentSection === 'profile') {
+      <section class="page-panel profile-page" aria-label="Your account">
+        <div class="profile-header">
+          <img class="profile-photo" [src]="profileAccount.avatar" [alt]="profileUsername + ' profile photo'">
+          <div class="profile-details">
+            <div class="profile-title"><h1>{{ profileUsername }}</h1>@if (profileUsername === 'alex.morgan') { <button type="button" (click)="showNotice('Profile editing is ready for your next update')">Edit profile</button><button type="button" class="profile-settings" aria-label="Profile settings">⚙</button> } @else { <button type="button" (click)="toggleFollow(profileUsername)">{{ isFollowing(profileUsername) ? 'Following' : 'Follow' }}</button> }</div>
+            <div class="profile-stats"><span><strong>{{ ownPosts.length }}</strong> posts</span><span><strong>1,284</strong> followers</span><span><strong>842</strong> following</span></div>
+            <div class="profile-bio"><strong>{{ profileUsername === 'alex.morgan' ? 'Alex Morgan' : profileAccount.label }}</strong><span>Creator</span><p>{{ profileUsername === 'alex.morgan' ? 'Collecting little moments ✨' : 'Sharing little moments from everyday life.' }}<br>📍 San Francisco, CA</p></div>
+          </div>
+        </div>
+        <div class="profile-tabs"><span>▦</span> POSTS</div>
+        @if (ownPosts.length) {
+          <div class="profile-grid">@for (post of ownPosts; track post.id) { <button type="button" (click)="showNotice(post.caption)"><img [src]="post.image" [alt]="post.alt"><span>♥ {{ post.likes }}　▢ {{ post.comments }}</span></button> }</div>
+        } @else {
+          <div class="no-posts"><span>▧</span>@if (profileUsername === 'alex.morgan') { <h2>Share your first photo</h2><p>When you share photos, they will appear on your profile.</p><button type="button" (click)="toggleComposer(); openSection('home')">Share your first photo</button> } @else { <h2>No posts yet</h2><p>{{ profileUsername }} hasn’t shared any posts yet.</p> }</div>
+        }
+      </section>
+    } @else {
+    <div class="content-grid">
+      <section class="feed-column" aria-label="Feed">
+        <div class="stories" aria-label="Stories">
+          @for (story of stories; track story.username) {
+            <button class="story" type="button" (click)="viewStory(story.username)">
+              <span class="story-ring" [class.seen]="story.seen"><img [src]="story.avatar" [alt]="story.username"></span>
+              <span class="story-name">{{ story.username }}</span>
+            </button>
+          }
+        </div>
+
+        @if (composerOpen) {
+          <form class="composer" (submit)="addPost($event)">
+            <div class="composer-head"><strong>Create a post</strong><button type="button" aria-label="Close" (click)="toggleComposer()">×</button></div>
+            <textarea name="caption" placeholder="Write a caption..." required></textarea>
+            <input name="image" type="url" placeholder="Paste an image URL (optional)">
+            <button class="share-button" type="submit">Share</button>
+          </form>
+        }
+
+        @for (post of posts; track post.id) {
+          <article class="post-card">
+            <header class="post-header">
+              <img class="avatar" [src]="post.avatar" [alt]="post.username">
+              <div class="post-user"><strong>{{ post.username }}</strong><span>{{ post.location }}</span></div>
+              <button class="dots" aria-label="More options">•••</button>
+            </header>
+            <img class="post-image" [src]="post.image" [alt]="post.alt" (dblclick)="toggleLike(post.id)">
+            <div class="post-actions">
+              <div class="action-group">
+                <button class="action-button like-button" [class.liked]="post.liked" type="button" (click)="toggleLike(post.id)" [attr.aria-label]="post.liked ? 'Unlike post' : 'Like post'">{{ post.liked ? '♥' : '♡' }}</button>
+                <button class="action-button" type="button" aria-label="Comment">◯</button>
+                <button class="action-button send-icon" type="button" aria-label="Copy post link" (click)="sharePost(post.id)">➤</button>
+              </div>
+              <button class="action-button bookmark" [class.saved]="post.saved" type="button" [attr.aria-label]="post.saved ? 'Remove saved post' : 'Save post'" (click)="toggleSaved(post.id)">{{ post.saved ? '▣' : '♧' }}</button>
+            </div>
+            <div class="post-copy">
+              <strong>{{ post.likes + (post.liked ? 1 : 0) }} likes</strong>
+              <p><strong>{{ post.username }}</strong> {{ post.caption }} <a href="#comments">{{ post.hashtags }}</a></p>
+              <button class="comments-link" type="button">View all {{ post.comments }} comments</button>
+              @for (comment of post.userComments; track $index) {
+                <p class="user-comment"><strong>alex.morgan</strong> {{ comment }}</p>
+              }
+              <span class="post-time">{{ post.time }}</span>
+            </div>
+            <form class="comment-form" (submit)="addComment($event, post.id)"><input name="comment" placeholder="Add a comment..." aria-label="Add a comment"><button type="submit">Post</button></form>
+          </article>
+        }
+      </section>
+
+      <aside class="suggestions" aria-label="Suggestions">
+        <div class="your-profile">
+          <img class="avatar large" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" alt="Your profile">
+          <div class="suggestion-user"><strong>alex.morgan</strong><span>Alex Morgan</span></div>
+          <button class="blue-link" type="button">Switch</button>
+        </div>
+        <div class="suggestion-heading"><strong>Suggested for you</strong><button type="button">See All</button></div>
+        @for (person of suggestions; track person.username) {
+          <div class="suggestion-row">
+            <img class="avatar" [src]="person.avatar" [alt]="person.username">
+            <div class="suggestion-user"><strong>{{ person.username }}</strong><span>{{ person.reason }}</span></div>
+            <button class="blue-link" [class.following]="person.following" type="button" (click)="toggleFollow(person.username)">{{ person.following ? 'Following' : 'Follow' }}</button>
+          </div>
+        }
+        <footer class="footer-links">About · Help · Press · API · Jobs · Privacy · Terms · Locations · Language<br><br>© 2026 INSTAGRAM FROM META</footer>
+      </aside>
+    </div>
+    }
+  </main>
+  @if (activeStory) {
+    <div class="story-overlay" (click)="activeStory = null">
+      <div class="story-viewer" (click)="$event.stopPropagation()">
+        <div class="story-progress"><span></span></div>
+        <header><img [src]="stories[activeStoryIndex].avatar" [alt]="activeStory"><strong>{{ activeStory }}</strong><button type="button" aria-label="Close story" (click)="activeStory = null">×</button></header>
+        <img class="story-photo" [src]="stories[activeStoryIndex].avatar" [alt]="activeStory + ' story'">
+        <button class="story-next" type="button" aria-label="Next story" (click)="nextStory()">›</button>
+      </div>
+    </div>
+  }
+  @if (notice) { <div class="toast" role="status">{{ notice }}</div> }
+</div>
